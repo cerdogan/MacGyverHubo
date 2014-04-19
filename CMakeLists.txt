@@ -7,7 +7,9 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 endif()
 
 # Include Dart and Grip stuff
-# include(cmake/simulation.cmake)
+include_directories(/home/cerdogan/Documents/Simulation/dart/src)
+link_directories(/home/cerdogan/Documents/Simulation/dart/build/lib)
+link_libraries(dart3 dart-core3 fcl ccd flann tinyxml tinyxml2)
 
 # Include Eigen
 include_directories(/usr/local/include/eigen3)

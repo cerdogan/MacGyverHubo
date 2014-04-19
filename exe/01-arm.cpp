@@ -12,9 +12,19 @@
 #include <HuboRT/Daemonizer.hpp>
 #include <Eigen/Dense>
 
+#include <utils/urdf/DartLoader.h>
+#include <simulation/World.h>
+#include <dynamics/Skeleton.h>
+#include <dynamics/BodyNode.h>
+
 typedef Eigen::Matrix<double,6,1> Vector6d;
 
 int main(int argc, char* argv[]) {
+
+	// Load the scene
+	dart::utils::DartLoader dl;
+	dart::simulation::World* world = dl.parseWorld("../data/dart/scenes/01-World-Robot.urdf");
+	dart::dynamics::Skeleton* hubo = world->getSkeleton("Hubo");
 
 	// Create the commander and redirect the kill signal
 	HuboCmd::Commander cmd;
@@ -46,7 +56,11 @@ int main(int argc, char* argv[]) {
 
 	// Set the goal joint values
 	Vector6d goal = Vector6d::Zero();
-//	goal << -0.3, -0.1, 0.0, -1.0, 1.57, 0.0;
+	goal << -M_PI/6, 0.0, 0.0, -2*M_PI/3, 0.0, M_PI/3;
+
+	// Set the right arm ids
+	std::vector <int> rarm_ids;
+	for(size_t i = 38; i < 44; i++) rarm_ids.push_back(i);
 
 	// Update the commands
 	int counter = 0;
@@ -59,6 +73,14 @@ int main(int argc, char* argv[]) {
 		for(size_t i = 0; i < 6; i++) 
 			state(i) = cmd.joints[joint_indices[i]].position;
 
+		// Compute the Jacobian
+		hubo->setConfig(rarm_ids, state);
+		Eigen::MatrixXd J = hubo->getBodyNode("Body_RWP")->getWorldJacobian().bottomRightCorner<6,6>();
+		Eigen::MatrixXd temp = J.topRightCorner<3,6>();
+		J.topRightCorner<3,6>() = J.bottomRightCorner<3,6>();
+		J.bottomRightCorner<3,6>() = temp;
+		// for(size_t i = 0; i < 6; i++) J(i,i) += 0.005;
+		
 		// Decide on the next reference values
 		double norm = (goal - state).norm();
 		Vector6d next; 
@@ -77,6 +99,7 @@ int main(int argc, char* argv[]) {
 			for(size_t i = 0; i < 6; i++) 
 				std::cout << cmd.joints[joint_indices[i]] << std::endl;
 			std::cout << "next: " << next.transpose() << std::endl;
+			std::cout << "J: [\n" << J << "]" << std::endl;
 			counter = 0;
 		}
 		++counter;
