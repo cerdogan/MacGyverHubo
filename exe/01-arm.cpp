@@ -10,6 +10,9 @@
 #include <iostream>
 #include <HuboCmd/Commander.hpp>
 #include <HuboRT/Daemonizer.hpp>
+#include <Eigen/Dense>
+
+typedef Eigen::Matrix<double,6,1> Vector6d;
 
 int main(int argc, char* argv[]) {
 
@@ -35,58 +38,45 @@ int main(int argc, char* argv[]) {
 	cmd.update();
 
 	// Set the command mode and reference positions
-	double last_goal_values [6]; 
 	for(size_t i = 0; i < 6; i++) {
 		cmd.set_mode(joint_indices[i], HUBO_CMD_RIGID);
 		cmd.set_position(joint_indices[i], cmd.joints[joint_indices[i]].position);
-		last_goal_values[i] = cmd.joints[joint_indices[i]].position;
 	}
 	cmd.send_commands();
 
 	// Set the goal joint values
-	double k = 0.0;
-	double goal_values [6] = {k, 0.0, 0.0, -2*k, 0.0, 0.0};
+	Vector6d goal = Vector6d::Zero();
+//	goal << -0.3, -0.1, 0.0, -1.0, 1.57, 0.0;
 
 	// Update the commands
 	int counter = 0;
-	double max_step_size = 0.006;
+	double max_step_size = 0.010;
 	while(rt.good()) {
 
 		// Update the state
 		cmd.update();
+		Vector6d state;
+		for(size_t i = 0; i < 6; i++) 
+			state(i) = cmd.joints[joint_indices[i]].position;
 
 		// Decide on the next reference values
-		bool updated = false;
-		for(size_t i = 0; i < 6; i++) {
-			if(fabs(last_goal_values[i] - cmd.joints[joint_indices[i]].position) < 0.020) {
-				updated = true;
-				double goal = cmd.joints[joint_indices[i]].position;
-				bool setPos = false;
-				if((goal_values[i] - cmd.joints[joint_indices[i]].position) > 0.020) {
-					goal = last_goal_values[i] + max_step_size;
-					setPos = true;
-				}
-				else if((goal_values[i] - cmd.joints[joint_indices[i]].position) < -0.020) {
-					goal = last_goal_values[i] - max_step_size;
-					setPos = true;
-				}
-				if(setPos) {
-					cmd.set_position(joint_indices[i], goal);
-					last_goal_values[i] = goal;
-				}
-			}
-		}
-		if(updated) cmd.send_commands();
+		double norm = (goal - state).norm();
+		Vector6d next; 
+		if(norm > 1e-4) next = state + max_step_size * (goal - state).normalized();
+		else next = goal;
+		for(size_t i = 0; i < 6; i++) 
+			if(fabs(goal(i) - cmd.joints[joint_indices[i]].position) > 2*max_step_size)
+				cmd.set_position(joint_indices[i], next(i));
+		cmd.send_commands();
 
 		// Print the current values
 		if(counter > 50) {
 			std::cout << "=========================================================" << std::endl;
+			std::cout << "goal: " << goal.transpose() << std::endl;
+			std::cout << "state: " << state.transpose() << std::endl;
 			for(size_t i = 0; i < 6; i++) 
 				std::cout << cmd.joints[joint_indices[i]] << std::endl;
-			std::cout << "goal pos: {";
-			for(size_t i = 0; i < 6; i++) 
-				std::cout << last_goal_values[i] << "\t";
-			std::cout << "}\n";
+			std::cout << "next: " << next.transpose() << std::endl;
 			counter = 0;
 		}
 		++counter;

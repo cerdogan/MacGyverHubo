@@ -1,7 +1,7 @@
 ======================= ARM PRACTICE ===============================
 + Move the joints using hubo for the first time alone
 + Run the trajectory code that Grey wrote
-Write a new executable that moves arm joints to specific locations.
++ Write a new executable that moves arm joints to specific locations.
 Get and compile dart v3.
 Implement Jacobian control on the arm.
 
