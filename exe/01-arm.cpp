@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 			if(dbg) std::cout << "dq: " << dq.transpose() << std::endl;
 
 			// Update the joint command
-			Vector6d next = state + max_step_size * dq;
+			Vector6d next = state + dq;
 			if(dbg) std::cout << "next: " << next.transpose() << std::endl;
 			for(size_t i = 0; i < 6; i++) 
 				if(fabs(dq(i)) > 0.00001)
