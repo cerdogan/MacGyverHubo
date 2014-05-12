@@ -88,7 +88,8 @@ int main(int argc, char* argv[]) {
 
 	// Set the goal joint values
 	Vector6d goal = Vector6d::Zero();
-	goal << -M_PI/6, 0.0, 0.0, -2*M_PI/3, 0.0, M_PI/3;
+//	goal << -M_PI/6, 0.0, 0.0, -2*M_PI/3, 0.0, M_PI/3;
+//	goal << 0.0, 0.0, 0.0, -5*M_PI/6, 0.0, 0.0;
 
 	// Set the right arm ids
 	std::vector <int> rarm_ids;
