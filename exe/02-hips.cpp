@@ -91,12 +91,20 @@ int main(int argc, char* argv[]) {
 	goals.push_back(goal1);
 
 	// Goal 2: Bend the knees
-	static const double angle = (-25.0 / 180.0) * M_PI;
+	static const double bendAngle = (-25.0 / 180.0) * M_PI;
 	Vector14d goal2 = Vector14d::Zero();
-	goal2 << 0.0, 0.0, angle, -2*angle, angle, 0.0,
-					 0.0, 0.0, angle, -2*angle, angle, 0.0,
+	goal2 << 0.0, 0.0, bendAngle, -2*bendAngle, bendAngle, 0.0,
+					 0.0, 0.0, bendAngle, -2*bendAngle, bendAngle, 0.0,
 					-5*M_PI/6.0, -5*M_PI/6.0;
 	goals.push_back(goal2);
+
+	// Goal 3: Sway the hips
+	static const double swayAngle = (-7.0 / 180.0) * M_PI;
+	Vector14d goal3 = Vector14d::Zero();
+	goal3 << 0.0, swayAngle, bendAngle, -2*bendAngle, bendAngle, -swayAngle,
+					 0.0, swayAngle, bendAngle, -2*bendAngle, bendAngle, -swayAngle,
+					-5*M_PI/6.0, -5*M_PI/6.0;
+	goals.push_back(goal3);
 
 	// Reset the goals with zero configuration
 	if((argc > 1) && (strcmp(argv[1], "-r") == 0)) {
@@ -108,11 +116,19 @@ int main(int argc, char* argv[]) {
 	// Reset only the hip goals
 	else if((argc > 1) && (strcmp(argv[1], "-l") == 0)) {
 		goals.clear();
-		Vector14d goal1 = Vector14d::Zero();
-		goal1 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-						0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-						-5*M_PI/6.0, -5*M_PI/6.0;
 		goals.push_back(goal1);
+	}
+
+	// Reset only the hip goals
+	else if((argc > 1) && (strcmp(argv[1], "-s") == 0)) {
+		goals.clear();
+		goals.push_back(goal2);
+	}
+
+	// Go to the last goal
+	else if((argc > 1) && (strcmp(argv[1], "-q") == 0)) {
+		goals.clear();
+		goals.push_back(goal3);
 	}
 
 	// Update the commands
@@ -123,6 +139,9 @@ int main(int argc, char* argv[]) {
 	int reached_goal_ctr = 0;
 	Vector14d lastNext;
 	while(rt.good()) {
+
+		// Update the step size based on the goal
+		if(goal_index >= 2) max_step_size = 0.002;
 
 		// Update the state
 		dbg = ((c_++ % 50) == 0);
