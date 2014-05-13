@@ -12,8 +12,11 @@
 #include <Eigen/Dense>
 
 #include <amino.h>
+#include <vector>
 
 #define NUM_JOINTS 14
+
+using namespace std;
 
 typedef Eigen::Matrix<double,14,1> Vector14d;
 typedef Eigen::Matrix<double,6,1> Vector6d;
@@ -79,38 +82,78 @@ int main(int argc, char* argv[]) {
 	}
 	cmd.send_commands();
 
-	// Set the goal joint values
-	Vector14d goal = Vector14d::Zero();
-	goal << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+	// Goal 1: Raise the arms 
+	vector <Vector14d> goals;
+	Vector14d goal1 = Vector14d::Zero();
+	goal1 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 					0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 					-5*M_PI/6.0, -5*M_PI/6.0;
+	goals.push_back(goal1);
+
+	// Goal 2: Bend the knees
+	static const double angle = (-25.0 / 180.0) * M_PI;
+	Vector14d goal2 = Vector14d::Zero();
+	goal2 << 0.0, 0.0, angle, -2*angle, angle, 0.0,
+					 0.0, 0.0, angle, -2*angle, angle, 0.0,
+					-5*M_PI/6.0, -5*M_PI/6.0;
+	goals.push_back(goal2);
+
+	// Reset the goals with zero configuration
+	if((argc > 1) && (strcmp(argv[1], "-r") == 0)) {
+		goals.clear();
+		Vector14d goal = Vector14d::Zero();
+		goals.push_back(goal);
+	}
+
+	// Reset only the hip goals
+	else if((argc > 1) && (strcmp(argv[1], "-l") == 0)) {
+		goals.clear();
+		Vector14d goal1 = Vector14d::Zero();
+		goal1 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+						0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+						-5*M_PI/6.0, -5*M_PI/6.0;
+		goals.push_back(goal1);
+	}
 
 	// Update the commands
 	int c_ = 0;
-	double max_step_size = 0.010;
-	bool reached_initial = false;
+	double max_step_size = 0.005;
+	int goal_index = 0;
+	Vector14d goal = goals[goal_index];
+	int reached_goal_ctr = 0;
+	Vector14d lastNext;
 	while(rt.good()) {
 
 		// Update the state
-		pthread_mutex_lock(&mutex);
 		dbg = ((c_++ % 50) == 0);
 		if(dbg) std::cout << "=========================================================" << std::endl;
 		cmd.update();
 		Vector14d state;
 		for(size_t i = 0; i < NUM_JOINTS; i++) 
 			state(i) = cmd.joints[joint_indices[i]].position;
+		if(c_ == 1) lastNext = state;
 
-		// Set goal configuration using Jacobian if reached start configuration
+		// Update the goal
 		double err = (goal - state).norm();
-		if(dbg) std::cout << "err: " << err << std::endl;
-		
-		// Compute the next joint command
-		double norm = (goal - state).norm();
-		Vector14d next; 
-		if(norm > 1e-4) next = state + max_step_size * (goal - state).normalized();
-		else {
-			next = goal;
+		if(dbg) std::cout << "goal index: " << goal_index << ", err: " << err << std::endl;
+		if(err < 0.05) {
+
+			// Wait a bit
+			reached_goal_ctr++;
+			if(dbg) std::cout << "reached goal ctr: " << reached_goal_ctr << endl;
+
+			// Also, update the goal configuration
+			if(reached_goal_ctr > 50) {
+				goal = goals[min((int)(goals.size()-1),goal_index+1)];
+				goal_index++;
+				reached_goal_ctr = 0;
+				std::cout << "new goal: " << goal.transpose() << ", ready? " << std::endl;
+			}
 		}
+
+		// Compute the next joint command using the current goal, state and step size
+		Vector14d next = lastNext + max_step_size * (goal - lastNext).normalized();
+		lastNext = next;
 
 		// Set command
 		for(size_t i = 0; i < NUM_JOINTS; i++) 
@@ -118,11 +161,19 @@ int main(int argc, char* argv[]) {
 				cmd.set_position(joint_indices[i], next(i));
 		cmd.send_commands();
 
+		// Update the command
+		HuboCan::error_result_t result = cmd.update();
+		if(result != HuboCan::OKAY) {   
+			std::cout << "Update threw an error: " << result << std::endl;
+			return 1;
+		}   
+
 		// Print stuff
 		if(dbg) {
+			std::cout << "goal index: " << goal_index << std::endl;
 			std::cout << "goal: " << goal.transpose() << std::endl;
 			std::cout << "state: " << state.transpose() << std::endl;
-			std::cout << "next: " << next.transpose() << std::endl;
+			std::cout << "next : " << next.transpose() << std::endl;
 		}
 
 		// Print the current values
@@ -130,7 +181,6 @@ int main(int argc, char* argv[]) {
 			for(size_t i = 0; i < NUM_JOINTS; i++) 
 				std::cout << cmd.joints[joint_indices[i]] << std::endl;
 		}
-		pthread_mutex_unlock(&mutex);
 	}
 
 	return 0;

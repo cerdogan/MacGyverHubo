@@ -1,12 +1,3 @@
-======================= ARM PRACTICE ===============================
-+ Move the joints using hubo for the first time alone
-+ Run the trajectory code that Grey wrote
-+ Write a new executable that moves arm joints to specific locations.
-Get and compile dart v3.
-Implement Jacobian control on the arm.
-
-====================== STATIC WALKING =============================
-Create a sinusoid with the hip and ankle roll joints in the air
-Put the robot down and compare the com between the ft and model
-Create a sinusoid with the hip pitch joint in the air
-Put the robot down and compare the com between the ft and model
++ Raise the arms
++ Bend the legs in the air (and on ground)
+Sway with the hips in the air (and on ground)
