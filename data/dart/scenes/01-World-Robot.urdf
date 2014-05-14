@@ -9,6 +9,6 @@
 <world name="schunk_with_desktop">
 	
 	<!-- Include the models by including either the complete urdf or referencing the file name -->
-	<include filename="../robots/drchubo_v2.urdf" model_name="hubo"/>
+	<include filename="../robots/drchubo_v2_empty.urdf" model_name="hubo"/>
 	<entity model="hubo" name="Hubo"> <origin xyz="0.0 0.0 0.962" rpy="0.0 0.0 0.0"/> </entity>  
 </world> 
