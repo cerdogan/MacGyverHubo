@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 	// Update the commands
 	int c_ = 0;
 	Vector14d lastNext;
-	size_t goal_index = 1;
+	size_t goal_index = 0;
 	while(rt.good()) {
 
 		// Update the state
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
 		// Set the workspace velocity
 		Eigen::Vector6d dx;
 		if(goal_index == 0) 
-			dx << 0.0, 0.0, -1.0, 0.0, 0.0, 0.0;
+			dx << 0.0, 0.0, 1.0, 0.0, 0.0, 0.0;
 		else if(goal_index == 1) 
 			dx << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 

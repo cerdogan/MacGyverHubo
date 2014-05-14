@@ -14,11 +14,11 @@
 #include <amino.h>
 #include <vector>
 
-#define NUM_JOINTS 14
+#define NUM_JOINTS 16
 
 using namespace std;
 
-typedef Eigen::Matrix<double,14,1> Vector14d;
+typedef Eigen::Matrix<double,16,1> Vector16d;
 typedef Eigen::Matrix<double,6,1> Vector6d;
 
 bool dbg = false;
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 	// Get the joint indices
 	std::string joint_names [NUM_JOINTS] = {"LHY", "LHR", "LHP", "LKP", "LAP", "LAR", 
 																					"RHY", "RHR", "RHP", "RKP", "RAP", "RAR",
-																					"LEP", "REP"};
+																					"LSP", "LEP", "RSP", "REP"};
 	size_t joint_indices [NUM_JOINTS];
 	for(size_t i = 0; i < NUM_JOINTS; i++) joint_indices[i] = cmd.get_index(joint_names[i]);
 	cmd.update();
@@ -83,33 +83,33 @@ int main(int argc, char* argv[]) {
 	cmd.send_commands();
 
 	// Goal 1: Raise the arms 
-	vector <Vector14d> goals;
-	Vector14d goal1 = Vector14d::Zero();
+	vector <Vector16d> goals;
+	Vector16d goal1 = Vector16d::Zero();
 	goal1 << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-					0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-					-5*M_PI/6.0, -5*M_PI/6.0;
+					 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+					 0.8, -5*M_PI/6.0, 0.8, -5*M_PI/6.0;
 	goals.push_back(goal1);
 
 	// Goal 2: Bend the knees
 	static const double bendAngle = (-25.0 / 180.0) * M_PI;
-	Vector14d goal2 = Vector14d::Zero();
+	Vector16d goal2 = Vector16d::Zero();
 	goal2 << 0.0, 0.0, bendAngle, -2*bendAngle, bendAngle, 0.0,
 					 0.0, 0.0, bendAngle, -2*bendAngle, bendAngle, 0.0,
-					-5*M_PI/6.0, -5*M_PI/6.0;
+					 0.8, -5*M_PI/6.0, 0.8, -5*M_PI/6.0;
 	goals.push_back(goal2);
 
 	// Goal 3: Sway the hips
 	static const double swayAngle = (-11.0 / 180.0) * M_PI;
-	Vector14d goal3 = Vector14d::Zero();
+	Vector16d goal3 = Vector16d::Zero();
 	goal3 << 0.0, swayAngle, bendAngle, -2*bendAngle, bendAngle, -swayAngle,
 					 0.0, swayAngle, bendAngle, -2*bendAngle, bendAngle, -swayAngle,
-					-5*M_PI/6.0, -5*M_PI/6.0;
+					 0.8, -5*M_PI/6.0, 0.8, -5*M_PI/6.0;
 	goals.push_back(goal3);
 
 	// Reset the goals with zero configuration
 	if((argc > 1) && (strcmp(argv[1], "-r") == 0)) {
 		goals.clear();
-		Vector14d goal = Vector14d::Zero();
+		Vector16d goal = Vector16d::Zero();
 		goals.push_back(goal);
 	}
 
@@ -142,9 +142,9 @@ int main(int argc, char* argv[]) {
 	int c_ = 0;
 	double max_step_size = 0.005;
 	int goal_index = 0;
-	Vector14d goal = goals[goal_index];
+	Vector16d goal = goals[goal_index];
 	int reached_goal_ctr = 0;
-	Vector14d lastNext;
+	Vector16d lastNext;
 	while(rt.good()) {
 
 		// Update the step size based on the goal
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
 		dbg = ((c_++ % 50) == 0);
 		if(dbg) std::cout << "=========================================================" << std::endl;
 		cmd.update();
-		Vector14d state;
+		Vector16d state;
 		for(size_t i = 0; i < NUM_JOINTS; i++) 
 			state(i) = cmd.joints[joint_indices[i]].position;
 		if(c_ == 1) lastNext = state;
@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		// Compute the next joint command using the current goal, state and step size
-		Vector14d next = lastNext + max_step_size * (goal - lastNext).normalized();
+		Vector16d next = lastNext + max_step_size * (goal - lastNext).normalized();
 		lastNext = next;
 
 		// Set command
