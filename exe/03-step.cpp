@@ -27,7 +27,6 @@ typedef Eigen::Matrix<double,6,1> Vector6d;
 
 bool dbg = false;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-Vector6d dx = Vector6d::Zero();
 
 dart::dynamics::Skeleton* hubo;
 double max_step_size = 0.005;
@@ -42,7 +41,7 @@ void moveFoot(const Eigen::VectorXd& dx, bool left, Vector6d& dq) {
 	J.topRightCorner<3,6>() = J.bottomRightCorner<3,6>();
 	J.bottomRightCorner<3,6>() = temp;
 	for(size_t i = 0; i < 6; i++) J(i,i) += 0.005;
-	if(dbg) std::cout << "J: [\n" << J << "]\n";
+	if(dbg) std::cout << "J= [\n" << J << "];\n";
 
 	// Compute the inverse
 	Eigen::MatrixXd JInv;
@@ -50,6 +49,7 @@ void moveFoot(const Eigen::VectorXd& dx, bool left, Vector6d& dq) {
 	aa_la_inv(6, JInv.data());
 
 	// Compute joint space velocity
+	if(dbg) cout << "dxRightLeg: " << dx.transpose() << endl;
 	dq = (JInv * dx);
 	if(dq.norm() > max_step_size) dq = dq.normalized() * max_step_size;
 	if(dbg) cout << "dqRightLeg: " << dq.transpose() << endl;
@@ -94,6 +94,7 @@ int main(int argc, char* argv[]) {
 		cmd.set_position(joint_indices[i], cmd.joints[joint_indices[i]].position);
 	}
 	cmd.send_commands();
+	cmd.update();
 
 	// Set the right arm ids
 	std::vector <int> rightLegIds;
@@ -102,6 +103,7 @@ int main(int argc, char* argv[]) {
 	// Update the commands
 	int c_ = 0;
 	Vector14d lastNext;
+	size_t goal_index = 1;
 	while(rt.good()) {
 
 		// Update the state
@@ -115,12 +117,15 @@ int main(int argc, char* argv[]) {
 		Vector6d rightLegState = state.block<6,1>(6,0);
 		hubo->setConfig(rightLegIds, rightLegState);
 
+		// Set the workspace velocity
+		Eigen::Vector6d dx;
+		if(goal_index == 0) 
+			dx << 0.0, 0.0, -1.0, 0.0, 0.0, 0.0;
+		else if(goal_index == 1) 
+			dx << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+
 		// Get the jointspace velocity for the right leg
 		Eigen::Vector6d dqRightLeg;
-		Eigen::Vector6d dx;
-		dx << 0.0, 0.0, 1.0, 0.0, 0.0, 0.0;
-		// dx << 1.0, 0.0, -1.0, 0.0, 0.0, 0.0;
-		cout << "dxRightLeg: " << dx.transpose() << endl;
 		moveFoot(dx, false, dqRightLeg);
 		Vector14d dq = Vector14d::Zero();
 		dq.block<6,1>(6,0) = dqRightLeg;

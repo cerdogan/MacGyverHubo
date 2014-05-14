@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 	goals.push_back(goal2);
 
 	// Goal 3: Sway the hips
-	static const double swayAngle = (-7.0 / 180.0) * M_PI;
+	static const double swayAngle = (-11.0 / 180.0) * M_PI;
 	Vector14d goal3 = Vector14d::Zero();
 	goal3 << 0.0, swayAngle, bendAngle, -2*bendAngle, bendAngle, -swayAngle,
 					 0.0, swayAngle, bendAngle, -2*bendAngle, bendAngle, -swayAngle,
@@ -122,6 +122,13 @@ int main(int argc, char* argv[]) {
 	// Reset only the hip goals
 	else if((argc > 1) && (strcmp(argv[1], "-s") == 0)) {
 		goals.clear();
+		goals.push_back(goal2);
+	}
+
+	// Reset only the hip goals
+	else if((argc > 1) && (strcmp(argv[1], "-2") == 0)) {
+		goals.clear();
+		goals.push_back(goal1);
 		goals.push_back(goal2);
 	}
 

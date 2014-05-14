@@ -9,7 +9,7 @@ endif()
 # Include Dart and Grip stuff
 include_directories(/home/cerdogan/Documents/Simulation/dart/src)
 link_directories(/home/cerdogan/Documents/Simulation/dart/build/lib)
-link_libraries(dart3 dart-core3 fcl ccd flann tinyxml tinyxml2 amino blas)
+link_libraries(dart3 dart-core3 fcl ccd flann tinyxml tinyxml2 amino blas )
 
 # Include Eigen
 include_directories(/usr/local/include/eigen3)

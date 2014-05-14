@@ -2,5 +2,8 @@
 + Bend the legs in the air (and on ground)
 + Sway with the hips in the air (and on ground)
 + Implement Jacobian on the leg
-Move the bent leg up in the air 
-Move the swayed leg without mass on ground
++ Move the bent leg up in the air 
++ Move the swayed leg without mass on ground
+Move the leg forward
+Move it until contact with ground
+Shift COM
